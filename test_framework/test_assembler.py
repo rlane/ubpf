@@ -3,6 +3,10 @@ from nose.plugins.skip import Skip, SkipTest
 import ubpf.assembler
 import ubpf.disassembler
 import testdata
+try:
+    xrange
+except NameError:
+    xrange = range
 
 # Just for assertion messages
 def try_disassemble(inst):
@@ -28,7 +32,7 @@ def check_datafile(filename):
     assert len(bin_result) / 8 == len(data['raw'])
 
     for i in xrange(0, len(bin_result), 8):
-        j = i/8
+        j = int(i/8)
         inst, = struct.unpack_from("=Q", bin_result[i:i+8])
         exp = data['raw'][j]
         if exp != inst:

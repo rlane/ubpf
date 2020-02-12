@@ -22,7 +22,7 @@ def check_datafile(filename):
         raise SkipTest("VM not found")
 
     if 'raw' in data:
-        code = ''.join(struct.pack("=Q", x) for x in data['raw'])
+        code = b''.join(struct.pack("=Q", x) for x in data['raw'])
     else:
         code = ubpf.assembler.assemble(data['asm'])
 
@@ -40,6 +40,8 @@ def check_datafile(filename):
     vm = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
     stdout, stderr = vm.communicate(code)
+    stdout = stdout.decode("utf-8")
+    stderr = stderr.decode("utf-8")
     stderr = stderr.strip()
 
     if memfile:

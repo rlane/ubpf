@@ -1,6 +1,9 @@
-from asm_parser import parse, Reg, Imm, MemRef
+from .asm_parser import parse, Reg, Imm, MemRef
 import struct
-import StringIO
+try:
+    from StringIO import StringIO as io
+except ImportError:
+    from io import BytesIO as io
 
 Inst = struct.Struct("BBHI")
 
@@ -11,9 +14,9 @@ MEM_SIZES = {
     'dw': 3,
 }
 
-MEM_LOAD_OPS = { 'ldx' + k: (0x61 | (v << 3)) for k, v in MEM_SIZES.items() }
-MEM_STORE_IMM_OPS = { 'st' + k: (0x62 | (v << 3))  for k, v in MEM_SIZES.items() }
-MEM_STORE_REG_OPS = { 'stx' + k: (0x63 | (v << 3)) for k, v in MEM_SIZES.items() }
+MEM_LOAD_OPS = { 'ldx' + k: (0x61 | (v << 3)) for k, v in list(MEM_SIZES.items()) }
+MEM_STORE_IMM_OPS = { 'st' + k: (0x62 | (v << 3))  for k, v in list(MEM_SIZES.items()) }
+MEM_STORE_REG_OPS = { 'stx' + k: (0x63 | (v << 3)) for k, v in list(MEM_SIZES.items()) }
 
 UNARY_ALU_OPS = {
     'neg': 8,
@@ -34,8 +37,8 @@ BINARY_ALU_OPS = {
     'arsh': 12,
 }
 
-UNARY_ALU32_OPS = { k + '32': v for k, v in UNARY_ALU_OPS.items() }
-BINARY_ALU32_OPS = { k + '32': v for k, v in BINARY_ALU_OPS.items() }
+UNARY_ALU32_OPS = { k + '32': v for k, v in list(UNARY_ALU_OPS.items()) }
+BINARY_ALU32_OPS = { k + '32': v for k, v in list(BINARY_ALU_OPS.items()) }
 
 END_OPS = {
     'le16': (0xd4, 16),
@@ -119,7 +122,7 @@ def assemble_one(inst):
 
 def assemble(source):
     insts = parse(source)
-    output = StringIO.StringIO()
+    output = io()
     for inst in insts:
         output.write(assemble_one(inst))
     return output.getvalue()

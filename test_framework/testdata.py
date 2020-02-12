@@ -41,7 +41,8 @@ def read(name):
                 section_lines[cur_section] = []
             elif cur_section:
                 section_lines[cur_section].append(line)
-    data = { section: '\n'.join(lines) for (section, lines) in section_lines.items() }
+    data = { section: '\n'.join(lines) for (section, lines) in list(section_lines.items()) }
+
 
     # Resolve links
     for k in data:
@@ -51,7 +52,7 @@ def read(name):
             section = section.strip()
             path = path.strip()
             fullpath = os.path.join(_test_data_dir, os.path.dirname(name), path)
-            with file(fullpath) as f:
+            with open(fullpath) as f:
                 data[section] = f.read()
 
     # Special case: convert 'raw' section into binary
@@ -72,6 +73,6 @@ def read(name):
             if ':' in line:
                 line = line[(line.rindex(':')+1):]
             hex_strs.extend(re.findall(r"[0-9A-Fa-f]{2}", line))
-        data['mem'] = ''.join(map(lambda x: chr(int(x, 16)), hex_strs))
+        data['mem'] = bytes(bytearray([(int(x, 16)) for x in hex_strs]))
 
     return data

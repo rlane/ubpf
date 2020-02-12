@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from parcon import *
 from collections import namedtuple
 
@@ -60,4 +61,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     result = parse(args.file.read())
     for inst in result:
-        print repr(inst)
+        print(repr(inst))

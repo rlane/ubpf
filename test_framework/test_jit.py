@@ -7,6 +7,10 @@ from nose.plugins.skip import Skip, SkipTest
 import ubpf.assembler
 import testdata
 VM = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "vm", "test")
+try:
+    xrange
+except NameError:
+    xrange = range
 
 def check_datafile(filename):
     """
@@ -24,7 +28,7 @@ def check_datafile(filename):
         raise SkipTest("JIT disabled for this testcase (%s)" % data['no jit'])
 
     if 'raw' in data:
-        code = ''.join(struct.pack("=Q", x) for x in data['raw'])
+        code = b''.join(struct.pack("=Q", x) for x in data['raw'])
     else:
         code = ubpf.assembler.assemble(data['asm'])
 
@@ -50,6 +54,8 @@ def check_datafile(filename):
             vm = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
             stdout, stderr = vm.communicate(code)
+            stdout = stdout.decode("utf-8")
+            stderr = stderr.decode("utf-8")
             stderr = stderr.strip()
 
             if 'error' in data:

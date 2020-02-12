@@ -15,7 +15,7 @@ def check_datafile(filename):
     if 'raw' not in data:
         raise SkipTest("no raw section in datafile")
 
-    binary = ''.join(struct.pack("=Q", x) for x in data['raw'])
+    binary = b''.join(struct.pack("=Q", x) for x in data['raw'])
     result = ubpf.disassembler.disassemble(binary)
 
     # TODO strip whitespace and comments from asm
