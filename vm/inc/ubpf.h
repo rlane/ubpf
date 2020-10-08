@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 struct ubpf_vm;
 typedef uint64_t (*ubpf_jit_fn)(void *mem, size_t mem_len);
