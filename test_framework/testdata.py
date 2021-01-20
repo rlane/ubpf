@@ -45,18 +45,15 @@ def read(name):
 
 
     # Resolve links
-    _data = {}
-    for k in data:
+    for k in list(data):
         if '@' in k:
+            del data[k]
             section, path = k.split('@')
             section = section.strip()
             path = path.strip()
             fullpath = os.path.join(_test_data_dir, os.path.dirname(name), path)
             with open(fullpath) as f:
-                _data[section] = f.read()
-        else:
-            _data[k] = data[k]
-    data = _data
+                data[section] = f.read()
 
     # Special case: convert 'raw' section into binary
     # Each line is parsed as an integer representing an instruction.
