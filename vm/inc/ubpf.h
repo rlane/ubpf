@@ -34,7 +34,15 @@ void ubpf_destroy(struct ubpf_vm *vm);
  * Pass true to enable, false to disable
  * Returns previous state
  */
-bool toggle_bounds_check(struct ubpf_vm *vm, bool enable);
+bool ubpf_toggle_bounds_check(struct ubpf_vm *vm, bool enable);
+
+
+/*
+ * Set the function to be invoked if the jitted program hits divide by zero.
+ *
+ * fprintf is the default function to be invoked on division by zero.
+ */
+void ubpf_set_error_print(struct ubpf_vm *vm, int (*error_printf)(FILE* stream, const char* format, ...));
 
 /*
  * Register an external function
@@ -85,4 +93,14 @@ uint64_t ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len);
 
 ubpf_jit_fn ubpf_compile(struct ubpf_vm *vm, char **errmsg);
 
+/*
+ * Translate the eBPF byte code to x64 machine code, store in buffer, and 
+ * write the resulting count of bytes to size.
+ *
+ * This must be called after registering all functions.
+ *
+ * Returns 0 on success, -1 on error. In case of error a pointer to the error
+ * message will be stored in 'errmsg' and should be freed by the caller.
+ */
+int ubpf_translate(struct ubpf_vm *vm, uint8_t *buffer, size_t *size, char **errmsg);
 #endif
