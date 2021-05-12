@@ -29,11 +29,19 @@
 static bool validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg);
 static bool bounds_check(const struct ubpf_vm *vm, void *addr, int size, const char *type, uint16_t cur_pc, void *mem, size_t mem_len, void *stack);
 
-bool toggle_bounds_check(struct ubpf_vm *vm, bool enable)
+bool ubpf_toggle_bounds_check(struct ubpf_vm *vm, bool enable)
 {
-  bool old = vm->bounds_check_enabled;
-  vm->bounds_check_enabled = enable;
-  return old;
+    bool old = vm->bounds_check_enabled;
+    vm->bounds_check_enabled = enable;
+    return old;
+}
+
+void ubpf_set_error_print(struct ubpf_vm *vm, int (*error_printf)(FILE* stream, const char* format, ...))
+{
+    if (error_printf)
+        vm->error_printf = error_printf;
+    else
+        vm->error_printf = fprintf;
 }
 
 struct ubpf_vm *
@@ -57,6 +65,7 @@ ubpf_create(void)
     }
 
     vm->bounds_check_enabled = true;
+    vm->error_printf = fprintf;
     return vm;
 }
 
@@ -185,7 +194,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_DIV_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] = u32(reg[inst.dst]) / u32(reg[inst.src]);
@@ -224,7 +233,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_NEG:
-            reg[inst.dst] = -reg[inst.dst];
+            reg[inst.dst] = -(int64_t)reg[inst.dst];
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_MOD_IMM:
@@ -233,7 +242,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_MOD_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] = u32(reg[inst.dst]) % u32(reg[inst.src]);
@@ -306,7 +315,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_DIV64_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] /= reg[inst.src];
@@ -343,7 +352,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_MOD64_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] %= reg[inst.src];
@@ -374,13 +383,13 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
          */
 #define BOUNDS_CHECK_LOAD(size) \
     do { \
-        if (!bounds_check(vm, (void *)reg[inst.src] + inst.offset, size, "load", cur_pc, mem, mem_len, stack)) { \
+        if (!bounds_check(vm, (char *)reg[inst.src] + inst.offset, size, "load", cur_pc, mem, mem_len, stack)) { \
             return UINT64_MAX; \
         } \
     } while (0)
 #define BOUNDS_CHECK_STORE(size) \
     do { \
-        if (!bounds_check(vm, (void *)reg[inst.dst] + inst.offset, size, "store", cur_pc, mem, mem_len, stack)) { \
+        if (!bounds_check(vm, (char *)reg[inst.dst] + inst.offset, size, "store", cur_pc, mem, mem_len, stack)) { \
             return UINT64_MAX; \
         } \
     } while (0)
@@ -744,15 +753,14 @@ bounds_check(const struct ubpf_vm *vm, void *addr, int size, const char *type, u
 {
     if (!vm->bounds_check_enabled)
         return true;
-    if (mem && (addr >= mem && (addr + size) <= (mem + mem_len))) {
+    if (mem && (addr >= mem && ((char*)addr + size) <= ((char*)mem + mem_len))) {
         /* Context access */
         return true;
-    } else if (addr >= stack && (addr + size) <= (stack + STACK_SIZE)) {
+    } else if (addr >= stack && ((char*)addr + size) <= ((char*)stack + STACK_SIZE)) {
         /* Stack access */
         return true;
     } else {
-        fprintf(stderr, "uBPF error: out of bounds memory %s at PC %u, addr %p, size %d\n", type, cur_pc, addr, size);
-        fprintf(stderr, "mem %p/%zd stack %p/%d\n", mem, mem_len, stack, STACK_SIZE);
+        vm->error_printf(stderr, "uBPF error: out of bounds memory %s at PC %u, addr %p, size %d\nmem %p/%zd stack %p/%d\n", type, cur_pc, addr, size, mem, mem_len, stack, STACK_SIZE);
         return false;
     }
 }
