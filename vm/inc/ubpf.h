@@ -21,6 +21,15 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+// Default values for maximum instruction count and stack size.
+#if !defined(UBPF_MAX_INSTS)
+#define UBPF_MAX_INSTS 65536
+#endif
+
+#if !defined(UBPF_STACK_SIZE)
+#define UBPF_STACK_SIZE 128
+#endif
+
 struct ubpf_vm;
 typedef uint64_t (*ubpf_jit_fn)(void *mem, size_t mem_len);
 
