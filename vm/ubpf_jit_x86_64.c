@@ -139,7 +139,7 @@ translate(struct ubpf_vm *vm, struct jit_state *state, char **errmsg)
     emit_mov(state, RSP, map_register(10));
 
     /* Allocate stack space */
-    emit_alu64_imm32(state, 0x81, 5, RSP, STACK_SIZE);
+    emit_alu64_imm32(state, 0x81, 5, RSP, UBPF_STACK_SIZE);
 
     for (i = 0; i < vm->num_insts; i++) {
         struct ebpf_inst inst = vm->insts[i];
@@ -470,7 +470,7 @@ translate(struct ubpf_vm *vm, struct jit_state *state, char **errmsg)
     }
 
     /* Deallocate stack space */
-    emit_alu64_imm32(state, 0x81, 0, RSP, STACK_SIZE);
+    emit_alu64_imm32(state, 0x81, 0, RSP, UBPF_STACK_SIZE);
 
     /* Restore platform non-volatile registers */
     for (i = 0; i < _countof(platform_nonvolatile_registers); i++)
@@ -590,8 +590,8 @@ ubpf_translate(struct ubpf_vm *vm, uint8_t * buffer, size_t * size, char **errms
     state.offset = 0;
     state.size = *size;
     state.buf = buffer;
-    state.pc_locs = calloc(MAX_INSTS+1, sizeof(state.pc_locs[0]));
-    state.jumps = calloc(MAX_INSTS, sizeof(state.jumps[0]));
+    state.pc_locs = calloc(UBPF_MAX_INSTS+1, sizeof(state.pc_locs[0]));
+    state.jumps = calloc(UBPF_MAX_INSTS, sizeof(state.jumps[0]));
     state.num_jumps = 0;
 
     if (translate(vm, &state, errmsg) < 0) {

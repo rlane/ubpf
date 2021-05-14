@@ -149,7 +149,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
     uint16_t pc = 0;
     const struct ebpf_inst *insts = vm->insts;
     uint64_t reg[16];
-    uint64_t stack[(STACK_SIZE+7)/8];
+    uint64_t stack[(UBPF_STACK_SIZE+7)/8];
 
     if (!insts) {
         /* Code must be loaded before we can execute */
@@ -574,8 +574,8 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
 static bool
 validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg)
 {
-    if (num_insts >= MAX_INSTS) {
-        *errmsg = ubpf_error("too many instructions (max %u)", MAX_INSTS);
+    if (num_insts >= UBPF_MAX_INSTS) {
+        *errmsg = ubpf_error("too many instructions (max %u)", UBPF_MAX_INSTS);
         return false;
     }
 
@@ -756,11 +756,11 @@ bounds_check(const struct ubpf_vm *vm, void *addr, int size, const char *type, u
     if (mem && (addr >= mem && ((char*)addr + size) <= ((char*)mem + mem_len))) {
         /* Context access */
         return true;
-    } else if (addr >= stack && ((char*)addr + size) <= ((char*)stack + STACK_SIZE)) {
+    } else if (addr >= stack && ((char*)addr + size) <= ((char*)stack + UBPF_STACK_SIZE)) {
         /* Stack access */
         return true;
     } else {
-        vm->error_printf(stderr, "uBPF error: out of bounds memory %s at PC %u, addr %p, size %d\nmem %p/%zd stack %p/%d\n", type, cur_pc, addr, size, mem, mem_len, stack, STACK_SIZE);
+        vm->error_printf(stderr, "uBPF error: out of bounds memory %s at PC %u, addr %p, size %d\nmem %p/%zd stack %p/%d\n", type, cur_pc, addr, size, mem, mem_len, stack, UBPF_STACK_SIZE);
         return false;
     }
 }
