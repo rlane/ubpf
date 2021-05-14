@@ -29,10 +29,9 @@ To run the tests, you first need to build the vm code then use nosetests to exec
 ### Before running the test (assuming Debian derived distro)
 ```
 sudo apt-get update
-sudo apt-get -y install python python-pip python-setuptools python-wheel python-nose
-python2 -m pip install --upgrade "pip<21.0"
-python2 -m pip install -r requirements.txt
-python2 -m pip install cpp-coveralls
+sudo apt-get -y install python3-pip
+python3 -m pip install -r requirements.txt
+python3 -m pip install cpp-coveralls
 ```
 
 ### Running the test
