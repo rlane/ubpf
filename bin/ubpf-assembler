@@ -23,11 +23,7 @@ def main():
     parser.add_argument('output', type=argparse.FileType('wb'), default='-', nargs='?')
     args = parser.parse_args()
 
-    if args.output.name == "<stdout>" and hasattr(args.output, "buffer"):
-        # python 3
-        args.output.buffer.write(ubpf.assembler.assemble(args.input.read()))
-    else:
-        args.output.write(ubpf.assembler.assemble(args.input.read()))
+    args.output.buffer.write(ubpf.assembler.assemble(args.input.read()))
 
 if __name__ == "__main__":
     main()

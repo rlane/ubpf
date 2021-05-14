@@ -1,8 +1,5 @@
 import struct
-try:
-    from StringIO import StringIO as io
-except ImportError:
-    from io import StringIO as io
+from io import StringIO as io
 
 Inst = struct.Struct("BBHI")
 

@@ -1,9 +1,6 @@
 from .asm_parser import parse, Reg, Imm, MemRef
 import struct
-try:
-    from StringIO import StringIO as io
-except ImportError:
-    from io import BytesIO as io
+from io import BytesIO as io
 
 Inst = struct.Struct("BBHI")
 

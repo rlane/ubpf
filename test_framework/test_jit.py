@@ -7,10 +7,6 @@ from nose.plugins.skip import Skip, SkipTest
 import ubpf.assembler
 import testdata
 VM = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "vm", "test")
-try:
-    xrange
-except NameError:
-    xrange = range
 
 def check_datafile(filename):
     """
@@ -45,7 +41,7 @@ def check_datafile(filename):
         num_register_offsets = 1
 
     try:
-        for register_offset in xrange(0, num_register_offsets):
+        for register_offset in range(0, num_register_offsets):
             cmd = [VM]
             if memfile:
                 cmd.extend(['-m', memfile.name])
