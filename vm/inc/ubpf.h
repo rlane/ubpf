@@ -27,7 +27,7 @@
 #endif
 
 #if !defined(UBPF_STACK_SIZE)
-#define UBPF_STACK_SIZE 128
+#define UBPF_STACK_SIZE 512
 #endif
 
 struct ubpf_vm;
