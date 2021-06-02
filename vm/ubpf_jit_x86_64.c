@@ -51,7 +51,7 @@ static int platform_nonvolatile_registers[] = {
 static int platform_parameter_registers[] = {
     RCX, RDX, R8, R9
 };
-#define RCX_ALT R15
+#define RCX_ALT R10
 // Register assignments:
 // BPF R0-R4 are "volatile"
 // BPF R5-R10 are "non-volatile"
@@ -64,11 +64,11 @@ static int register_map[REGISTER_MAP_SIZE] = {
     RDX,
     R8,
     R9,
-    RBX,
+    R14,
+    R15,
     RDI,
     RSI,
-    R13,
-    R14,
+    RBX,
     RBP,
 };
 #else
