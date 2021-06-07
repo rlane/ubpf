@@ -60,7 +60,7 @@ static int platform_parameter_registers[] = {
 // Avoid R12 as we don't support encoding modrm modifier for using R12.
 static int register_map[REGISTER_MAP_SIZE] = {
     RAX,
-    R15,
+    R10,
     RDX,
     R8,
     R9,
