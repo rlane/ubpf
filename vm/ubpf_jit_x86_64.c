@@ -51,18 +51,24 @@ static int platform_nonvolatile_registers[] = {
 static int platform_parameter_registers[] = {
     RCX, RDX, R8, R9
 };
-#define RCX_ALT R15
+#define RCX_ALT R10
+// Register assignments:
+// BPF R0-R4 are "volatile"
+// BPF R5-R10 are "non-volatile"
+// Map BPF volatile registers to x64 volatile and map BPF non-volatile to
+// x64 non-volatile.
+// Avoid R12 as we don't support encoding modrm modifier for using R12.
 static int register_map[REGISTER_MAP_SIZE] = {
     RAX,
-    R15,
+    R10,
     RDX,
     R8,
     R9,
-    R10,
-    R11,
-    R12,
-    R13,
     R14,
+    R15,
+    RDI,
+    RSI,
+    RBX,
     RBP,
 };
 #else
