@@ -143,8 +143,8 @@ u32(uint64_t x)
     return x;
 }
 
-uint64_t
-ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
+int 
+ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_return_value)
 {
     uint16_t pc = 0;
     const struct ebpf_inst *insts = vm->insts;
@@ -153,7 +153,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
 
     if (!insts) {
         /* Code must be loaded before we can execute */
-        return UINT64_MAX;
+        return -1;
     }
 
     reg[1] = (uintptr_t)mem;
@@ -195,7 +195,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
         case EBPF_OP_DIV_REG:
             if (reg[inst.src] == 0) {
                 vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
-                return UINT64_MAX;
+                return -1;
             }
             reg[inst.dst] = u32(reg[inst.dst]) / u32(reg[inst.src]);
             reg[inst.dst] &= UINT32_MAX;
@@ -243,7 +243,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
         case EBPF_OP_MOD_REG:
             if (reg[inst.src] == 0) {
                 vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
-                return UINT64_MAX;
+                return -1;
             }
             reg[inst.dst] = u32(reg[inst.dst]) % u32(reg[inst.src]);
             break;
@@ -316,7 +316,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
         case EBPF_OP_DIV64_REG:
             if (reg[inst.src] == 0) {
                 vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
-                return UINT64_MAX;
+                return -1;
             }
             reg[inst.dst] /= reg[inst.src];
             break;
@@ -353,7 +353,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
         case EBPF_OP_MOD64_REG:
             if (reg[inst.src] == 0) {
                 vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
-                return UINT64_MAX;
+                return -1;
             }
             reg[inst.dst] %= reg[inst.src];
             break;
@@ -384,13 +384,13 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
 #define BOUNDS_CHECK_LOAD(size) \
     do { \
         if (!bounds_check(vm, (char *)reg[inst.src] + inst.offset, size, "load", cur_pc, mem, mem_len, stack)) { \
-            return UINT64_MAX; \
+            return -1; \
         } \
     } while (0)
 #define BOUNDS_CHECK_STORE(size) \
     do { \
         if (!bounds_check(vm, (char *)reg[inst.dst] + inst.offset, size, "store", cur_pc, mem, mem_len, stack)) { \
-            return UINT64_MAX; \
+            return -1; \
         } \
     } while (0)
 
@@ -563,7 +563,8 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
             }
             break;
         case EBPF_OP_EXIT:
-            return reg[0];
+            *bpf_return_value = reg[0];
+            return 0;
         case EBPF_OP_CALL:
             reg[0] = vm->ext_funcs[inst.imm](reg[1], reg[2], reg[3], reg[4], reg[5]);
             break;

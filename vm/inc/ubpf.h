@@ -98,7 +98,7 @@ int ubpf_load(struct ubpf_vm *vm, const void *code, uint32_t code_len, char **er
  */
 int ubpf_load_elf(struct ubpf_vm *vm, const void *elf, size_t elf_len, char **errmsg);
 
-uint64_t ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len);
+int ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_return_value);
 
 ubpf_jit_fn ubpf_compile(struct ubpf_vm *vm, char **errmsg);
 
