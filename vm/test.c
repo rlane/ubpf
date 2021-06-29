@@ -139,7 +139,8 @@ int main(int argc, char **argv)
         }
         ret = fn(mem, mem_len);
     } else {
-        ret = ubpf_exec(vm, mem, mem_len);
+        if (ubpf_exec(vm, mem, mem_len, &ret) < 0)
+            ret = UINT64_MAX;
     }
 
     printf("0x%"PRIx64"\n", ret);
