@@ -66,6 +66,8 @@ ubpf_create(void)
 
     vm->bounds_check_enabled = true;
     vm->error_printf = fprintf;
+
+    vm->unwind_stack_extension_index = -1;
     return vm;
 }
 
@@ -90,6 +92,17 @@ ubpf_register(struct ubpf_vm *vm, unsigned int idx, const char *name, void *fn)
 
     vm->ext_funcs[idx] = (ext_func)fn;
     vm->ext_func_names[idx] = name;
+
+    return 0;
+}
+
+int ubpf_set_unwind_function_index(struct ubpf_vm *vm, unsigned int idx)
+{
+    if (vm->unwind_stack_extension_index != -1) {
+        return -1;
+    }
+
+    vm->unwind_stack_extension_index = idx;
     return 0;
 }
 
@@ -568,6 +581,11 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             return 0;
         case EBPF_OP_CALL:
             reg[0] = vm->ext_funcs[inst.imm](reg[1], reg[2], reg[3], reg[4], reg[5]);
+            // Unwind the stack if unwind extension returns success.
+            if (inst.imm == vm->unwind_stack_extension_index && reg[0] == 0) {
+                *bpf_return_value = reg[0];
+                return 0;
+            }
             break;
         }
     }

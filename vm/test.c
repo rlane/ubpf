@@ -226,6 +226,12 @@ sqrti(uint32_t x)
     return sqrt(x);
 }
 
+static uint64_t
+unwind(uint64_t i)
+{
+    return i;
+}
+
 static void
 register_functions(struct ubpf_vm *vm)
 {
@@ -234,4 +240,6 @@ register_functions(struct ubpf_vm *vm)
     ubpf_register(vm, 2, "trash_registers", trash_registers);
     ubpf_register(vm, 3, "sqrti", sqrti);
     ubpf_register(vm, 4, "strcmp_ext", strcmp);
+    ubpf_register(vm, 5, "unwind", unwind);
+    ubpf_set_unwind_function_index(vm, 5);
 }

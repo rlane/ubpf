@@ -112,4 +112,14 @@ ubpf_jit_fn ubpf_compile(struct ubpf_vm *vm, char **errmsg);
  * message will be stored in 'errmsg' and should be freed by the caller.
  */
 int ubpf_translate(struct ubpf_vm *vm, uint8_t *buffer, size_t *size, char **errmsg);
+
+/*
+ * Instruct the uBPF runtime to apply unwind-on-success semantics to a helper
+ * function. If the function returns 0, the uBPF runtime will end execution of
+ * the eBPF program and immediately return control to the caller. This is used
+ * for implementing function like the "bpf_tail_call" helper. 
+ * Returns 0 on success, -1 on if there is already an unwind helper set.
+ */
+int ubpf_set_unwind_function_index(struct ubpf_vm *vm, unsigned int idx);
+
 #endif
