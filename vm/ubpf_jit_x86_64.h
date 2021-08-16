@@ -319,11 +319,25 @@ emit_store_imm32(struct jit_state *state, enum operand_size size, int dst, int32
 static inline void
 emit_call(struct jit_state *state, void *target)
 {
+#if defined(_WIN32)
+    /* Windows x64 ABI spills 5th parameter to stack */
+    emit_push(state, map_register(5));
+
+    /* Windows x64 ABI requires home register space */
+    /* Allocate home register space - 4 registers */
+    emit_alu64_imm32(state, 0x81, 5, RSP, 4 * sizeof(uint64_t));
+#endif
+
     /* TODO use direct call when possible */
     emit_load_imm(state, RAX, (uintptr_t)target);
     /* callq *%rax */
     emit1(state, 0xff);
     emit1(state, 0xd0);
+
+#if defined(_WIN32)
+    /* Deallocate home register space + spilled register - 5 registers */
+    emit_alu64_imm32(state, 0x81, 0, RSP, 5 * sizeof(uint64_t));
+#endif
 }
 
 static inline void
