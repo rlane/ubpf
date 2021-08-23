@@ -408,6 +408,10 @@ translate(struct ubpf_vm *vm, struct jit_state *state, char **errmsg)
             /* We reserve RCX for shifts */
             emit_mov(state, RCX_ALT, RCX);
             emit_call(state, vm->ext_funcs[inst.imm]);
+            if (inst.imm == vm->unwind_stack_extension_index) {
+                emit_cmp_imm32(state, map_register(0), 0);
+                emit_jcc(state, 0x84, TARGET_PC_EXIT);
+            }
             break;
         case EBPF_OP_EXIT:
             if (i != vm->num_insts - 1) {
