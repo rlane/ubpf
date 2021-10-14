@@ -74,10 +74,7 @@ ubpf_create(void)
 void
 ubpf_destroy(struct ubpf_vm *vm)
 {
-    if (vm->jitted) {
-        munmap(vm->jitted, vm->jitted_size);
-    }
-    free(vm->insts);
+    ubpf_unload_code(vm);
     free(vm->ext_funcs);
     free(vm->ext_func_names);
     free(vm);
@@ -125,7 +122,7 @@ ubpf_load(struct ubpf_vm *vm, const void *code, uint32_t code_len, char **errmsg
     *errmsg = NULL;
 
     if (vm->insts) {
-        *errmsg = ubpf_error("code has already been loaded into this VM");
+        *errmsg = ubpf_error("code has already been loaded into this VM. Use ubpf_unload_code() if you need to reuse this VM");
         return -1;
     }
 
@@ -148,6 +145,21 @@ ubpf_load(struct ubpf_vm *vm, const void *code, uint32_t code_len, char **errmsg
     vm->num_insts = code_len/sizeof(vm->insts[0]);
 
     return 0;
+}
+
+void
+ubpf_unload_code(struct ubpf_vm *vm)
+{
+    if (vm->jitted) {
+        munmap(vm->jitted, vm->jitted_size);
+        vm->jitted = NULL;
+        vm->jitted_size = 0;
+    }
+    if (vm->insts) {
+        free(vm->insts);
+        vm->insts = NULL;
+        vm->num_insts = 0;
+    }
 }
 
 static uint32_t
