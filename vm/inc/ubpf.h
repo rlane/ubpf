@@ -17,6 +17,7 @@
 #ifndef UBPF_H
 #define UBPF_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
