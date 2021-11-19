@@ -26,6 +26,10 @@
 
 #define MAX_EXT_FUNCS 64
 
+const char* ubpf_string_table[1] = {
+    "uBPF error: division by zero at PC %u\n",
+};
+
 static bool validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg);
 static bool bounds_check(const struct ubpf_vm *vm, void *addr, int size, const char *type, uint16_t cur_pc, void *mem, size_t mem_len, void *stack);
 
@@ -220,7 +224,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             break;
         case EBPF_OP_DIV_REG:
             if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
                 return -1;
             }
             reg[inst.dst] = u32(reg[inst.dst]) / u32(reg[inst.src]);
@@ -268,7 +272,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             break;
         case EBPF_OP_MOD_REG:
             if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
                 return -1;
             }
             reg[inst.dst] = u32(reg[inst.dst]) % u32(reg[inst.src]);
@@ -341,7 +345,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             break;
         case EBPF_OP_DIV64_REG:
             if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
                 return -1;
             }
             reg[inst.dst] /= reg[inst.src];
@@ -378,7 +382,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             break;
         case EBPF_OP_MOD64_REG:
             if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
                 return -1;
             }
             reg[inst.dst] %= reg[inst.src];

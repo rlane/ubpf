@@ -38,4 +38,7 @@ struct ubpf_vm {
 char *ubpf_error(const char *fmt, ...);
 unsigned int ubpf_lookup_registered_function(struct ubpf_vm *vm, const char *name);
 
+extern const char* ubpf_string_table[1];
+#define UBPF_STRING_ID_DIVIDE_BY_ZERO 0
+
 #endif
