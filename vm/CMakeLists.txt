@@ -86,9 +86,12 @@ if(TARGET "ubpf_compat")
     $<BUILD_INTERFACE:ubpf_compat>
   )
 
-  target_link_libraries("ubpf_test" PRIVATE
-    $<BUILD_INTERFACE:ubpf_compat>
-  )
+  if(UBPF_ENABLE_TESTS)
+    target_link_libraries("ubpf_test" PRIVATE
+      $<BUILD_INTERFACE:ubpf_compat>
+    )
+  endif()
+
 endif()
 
 
