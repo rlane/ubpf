@@ -4,6 +4,4 @@ mov32 r1, 0
 mod r0, r1
 exit
 -- result
-0xffffffffffffffff
--- error
-uBPF error: division by zero at PC 2
+0x1

@@ -238,15 +238,11 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_DIV_IMM:
-            reg[inst.dst] = u32(reg[inst.dst]) / u32(inst.imm);
+            reg[inst.dst] = u32(inst.imm) ? u32(reg[inst.dst]) / u32(inst.imm) : 0;
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_DIV_REG:
-            if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
-                return -1;
-            }
-            reg[inst.dst] = u32(reg[inst.dst]) / u32(reg[inst.src]);
+            reg[inst.dst] = reg[inst.src] ? u32(reg[inst.dst]) / u32(reg[inst.src]) : 0;
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_OR_IMM:
@@ -286,15 +282,11 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_MOD_IMM:
-            reg[inst.dst] = u32(reg[inst.dst]) % u32(inst.imm);
+            reg[inst.dst] = u32(inst.imm) ? u32(reg[inst.dst]) % u32(inst.imm) : u32(reg[inst.dst]);
             reg[inst.dst] &= UINT32_MAX;
             break;
         case EBPF_OP_MOD_REG:
-            if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
-                return -1;
-            }
-            reg[inst.dst] = u32(reg[inst.dst]) % u32(reg[inst.src]);
+            reg[inst.dst] = u32(reg[inst.src]) ? u32(reg[inst.dst]) % u32(reg[inst.src]) : u32(reg[inst.dst]);
             break;
         case EBPF_OP_XOR_IMM:
             reg[inst.dst] ^= inst.imm;
@@ -363,11 +355,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             reg[inst.dst] /= inst.imm;
             break;
         case EBPF_OP_DIV64_REG:
-            if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
-                return -1;
-            }
-            reg[inst.dst] /= reg[inst.src];
+            reg[inst.dst] = reg[inst.src] ? reg[inst.dst] / reg[inst.src] : 0;
             break;
         case EBPF_OP_OR64_IMM:
             reg[inst.dst] |= inst.imm;
@@ -397,14 +385,10 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             reg[inst.dst] = -reg[inst.dst];
             break;
         case EBPF_OP_MOD64_IMM:
-            reg[inst.dst] %= inst.imm;
+            reg[inst.dst] = inst.imm ? reg[inst.dst] % inst.imm : 0;
             break;
         case EBPF_OP_MOD64_REG:
-            if (reg[inst.src] == 0) {
-                vm->error_printf(stderr, ubpf_string_table[UBPF_STRING_ID_DIVIDE_BY_ZERO], cur_pc);
-                return -1;
-            }
-            reg[inst.dst] %= reg[inst.src];
+            reg[inst.dst] = reg[inst.src] ? reg[inst.dst] % reg[inst.src] : reg[inst.dst];
             break;
         case EBPF_OP_XOR64_IMM:
             reg[inst.dst] ^= inst.imm;
@@ -778,10 +762,6 @@ validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
         case EBPF_OP_MOD_IMM:
         case EBPF_OP_DIV64_IMM:
         case EBPF_OP_MOD64_IMM:
-            if (inst.imm == 0) {
-                *errmsg = ubpf_error("division by zero at PC %d", i);
-                return false;
-            }
             break;
 
         default:

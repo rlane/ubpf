@@ -35,7 +35,7 @@
 #define TARGET_PC_EXIT -1
 #define TARGET_PC_DIV_BY_ZERO -2
 
-static void muldivmod(struct jit_state *state, uint16_t pc, uint8_t opcode, int src, int dst, int32_t imm);
+static void muldivmod(struct jit_state *state, uint8_t opcode, int src, int dst, int32_t imm);
 
 #define REGISTER_MAP_SIZE 11
 
@@ -174,7 +174,7 @@ translate(struct ubpf_vm *vm, struct jit_state *state, char **errmsg)
         case EBPF_OP_DIV_REG:
         case EBPF_OP_MOD_IMM:
         case EBPF_OP_MOD_REG:
-            muldivmod(state, i, inst.opcode, src, dst, inst.imm);
+            muldivmod(state, inst.opcode, src, dst, inst.imm);
             break;
         case EBPF_OP_OR_IMM:
             emit_alu32_imm32(state, 0x81, 1, dst, inst.imm);
@@ -261,7 +261,7 @@ translate(struct ubpf_vm *vm, struct jit_state *state, char **errmsg)
         case EBPF_OP_DIV64_REG:
         case EBPF_OP_MOD64_IMM:
         case EBPF_OP_MOD64_REG:
-            muldivmod(state, i, inst.opcode, src, dst, inst.imm);
+            muldivmod(state, inst.opcode, src, dst, inst.imm);
             break;
         case EBPF_OP_OR64_IMM:
             emit_alu64_imm32(state, 0x81, 1, dst, inst.imm);
@@ -515,42 +515,74 @@ translate(struct ubpf_vm *vm, struct jit_state *state, char **errmsg)
 }
 
 static void
-muldivmod(struct jit_state *state, uint16_t pc, uint8_t opcode, int src, int dst, int32_t imm)
+muldivmod(struct jit_state *state, uint8_t opcode, int src, int dst, int32_t imm)
 {
     bool mul = (opcode & EBPF_ALU_OP_MASK) == (EBPF_OP_MUL_IMM & EBPF_ALU_OP_MASK);
     bool div = (opcode & EBPF_ALU_OP_MASK) == (EBPF_OP_DIV_IMM & EBPF_ALU_OP_MASK);
     bool mod = (opcode & EBPF_ALU_OP_MASK) == (EBPF_OP_MOD_IMM & EBPF_ALU_OP_MASK);
     bool is64 = (opcode & EBPF_CLS_MASK) == EBPF_CLS_ALU64;
+    bool reg = (opcode & EBPF_SRC_REG) == EBPF_SRC_REG;
 
-    if (div || mod) {
-        emit_load_imm(state, RCX, pc);
-
-        /* test src,src */
-        if (is64) {
-            emit_alu64(state, 0x85, src, src);
+    // Short circuit for imm == 0.
+    if (!reg && imm == 0) {
+        if (div || mul) {
+            // For division and multiplication, set result to zero.
+            emit_alu32(state, 0x31, dst, dst);
         } else {
-            emit_alu32(state, 0x85, src, src);
+            // For modulo, set result to dividend.
+            emit_mov(state, dst, dst);
         }
-
-        /* jz div_by_zero */
-        emit_jcc(state, 0x84, TARGET_PC_DIV_BY_ZERO);
+        return;
     }
 
     if (dst != RAX) {
         emit_push(state, RAX);
     }
+
     if (dst != RDX) {
         emit_push(state, RDX);
     }
+
+    // Load the divisor into RCX.
     if (imm) {
         emit_load_imm(state, RCX, imm);
     } else {
         emit_mov(state, src, RCX);
     }
 
+    // Load the dividend into RAX.
     emit_mov(state, dst, RAX);
 
+    // BPF has two different semantics for division and modulus. For division
+    // if the divisor is zero, the result is zero.  For modulus, if the divisor
+    // is zero, the result is the dividend. To handle this we set the divisor
+    // to 1 if it is zero and then set the result to zero if the divisor was
+    // zero (for division) or set the result to the dividend if the divisor was
+    // zero (for modulo).
+
     if (div || mod) {
+        // Check if divisor is zero.
+        if (is64) {
+            emit_alu64(state, 0x85, RCX, RCX);
+        } else {
+            emit_alu32(state, 0x85, RCX, RCX);
+        }
+
+        // Save the dividend for the modulo case.
+        if (mod) {
+            emit_push(state, RAX);  // Save dividend.
+        }
+
+        // Save the result of the test.
+        emit1(state, 0x9c); /* pushfq */
+
+        // Set the divisor to 1 of it is zero.
+        emit_load_imm(state, RDX, 1);
+        emit1(state, 0x48);
+        emit1(state, 0x0f);
+        emit1(state, 0x44);
+        emit1(state, 0xca); /* cmove rcx,rdx */
+
         /* xor %edx,%edx */
         emit_alu32(state, 0x31, RDX, RDX);
     }
@@ -559,9 +591,39 @@ muldivmod(struct jit_state *state, uint16_t pc, uint8_t opcode, int src, int dst
         emit_rex(state, 1, 0, 0, 0);
     }
 
-    /* mul %ecx or div %ecx */
+    // Multiply or divide.
     emit_alu32(state, 0xf7, mul ? 4 : 6, RCX);
 
+    // Division operation stores the remainder in RDX and the quotient in RAX.
+    if (div || mod) {
+        // Restore the result of the test.
+        emit1(state, 0x9d); /* popfq */
+
+        // If zero flag is set, then the divisor was zero.
+
+        if (div) {
+            // Set the dividend to zero if the divisor was zero.
+            emit_load_imm(state, RCX, 0);
+
+            // Store 0 in RAX if the divisor was zero.
+            // Use conditional move to avoid a branch.
+            emit1(state, 0x48);
+            emit1(state, 0x0f);
+            emit1(state, 0x44);
+            emit1(state, 0xc1); /* cmove rax,rcx */
+        } else {
+            // Restore dividend to RCX.
+            emit_pop(state, RCX);
+
+            // Store the dividend in RAX if the divisor was zero.
+            // Use conditional move to avoid a branch.
+            emit1(state, 0x48);
+            emit1(state, 0x0f);
+            emit1(state, 0x44);
+            emit1(state, 0xd1); /* cmove rdx,rcx */
+        }
+    }
+    
     if (dst != RDX) {
         if (mod) {
             emit_mov(state, RDX, dst);
