@@ -352,7 +352,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             reg[inst.dst] *= reg[inst.src];
             break;
         case EBPF_OP_DIV64_IMM:
-            reg[inst.dst] /= inst.imm;
+            reg[inst.dst] = inst.imm ? reg[inst.dst] / inst.imm : 0;
             break;
         case EBPF_OP_DIV64_REG:
             reg[inst.dst] = reg[inst.src] ? reg[inst.dst] / reg[inst.src] : 0;
@@ -385,7 +385,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len, uint64_t* bpf_ret
             reg[inst.dst] = -reg[inst.dst];
             break;
         case EBPF_OP_MOD64_IMM:
-            reg[inst.dst] = inst.imm ? reg[inst.dst] % inst.imm : 0;
+            reg[inst.dst] = inst.imm ? reg[inst.dst] % inst.imm : reg[inst.dst];
             break;
         case EBPF_OP_MOD64_REG:
             reg[inst.dst] = reg[inst.src] ? reg[inst.dst] % reg[inst.src] : reg[inst.dst];

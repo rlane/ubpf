@@ -576,7 +576,7 @@ muldivmod(struct jit_state *state, uint8_t opcode, int src, int dst, int32_t imm
         // Save the result of the test.
         emit1(state, 0x9c); /* pushfq */
 
-        // Set the divisor to 1 of it is zero.
+        // Set the divisor to 1 if it is zero.
         emit_load_imm(state, RDX, 1);
         emit1(state, 0x48);
         emit1(state, 0x0f);
